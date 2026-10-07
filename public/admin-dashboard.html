@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - KHQNZUR</title>
+  <link rel="stylesheet" href="/admin-dashboard.css" />
+</head>
+<body>
+  <div class="admin-dashboard">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>KHQNZUR</h2>
+        <p>Admin Panel</p>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-page="products">
+          📦 Products
+        </button>
+        <button class="nav-item" data-page="transactions">
+          💳 Transactions
+        </button>
+        <button class="nav-item" data-page="analytics">
+          📊 Analytics
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="logoutBtn" class="logout-btn">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="top-bar">
+        <h1>Admin Dashboard</h1>
+        <div class="admin-info">
+          <span id="adminEmail">kanzu@gmail.com</span>
+        </div>
+      </header>
+
+      <section id="products" class="page active">
+        <div class="page-header">
+          <h2>Product Management</h2>
+          <button id="addProductBtn" class="btn-primary">+ Add Product</button>
+        </div>
+
+        <div id="productsGrid" class="products-grid"></div>
+      </section>
+
+      <section id="transactions" class="page">
+        <div class="page-header">
+          <h2>Transaction History</h2>
+          <input type="text" id="searchTransactions" placeholder="Search by phone..." />
+        </div>
+
+        <div class="transactions-container">
+          <table id="transactionsTable" class="transactions-table">
+            <thead>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Phone Number</th>
+                <th>Bundle</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="analytics" class="page">
+        <div class="page-header">
+          <h2>Analytics</h2>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="stat-card">
+            <h3>Total Transactions</h3>
+            <p id="statTransactions" class="stat-value">0</p>
+          </div>
+
+          <div class="stat-card">
+            <h3>Completed Payments</h3>
+            <p id="statCompleted" class="stat-value">0</p>
+          </div>
+
+          <div class="stat-card">
+            <h3>Failed Payments</h3>
+            <p id="statFailed" class="stat-value">0</p>
+          </div>
+
+          <div class="stat-card">
+            <h3>Total Revenue</h3>
+            <p id="statRevenue" class="stat-value">KSh 0</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="productModal" class="modal hidden">
+    <div class="modal-card">
+      <button class="close-btn" id="closeProductModal">×</button>
+      <h3 id="modalTitle">Edit Product</h3>
+
+      <form id="productForm">
+        <label for="productId">Product ID</label>
+        <input type="text" id="productId" readonly />
+
+        <label for="productName">Name</label>
+        <input type="text" id="productName" required />
+
+        <label for="productPrice">Price (KSh)</label>
+        <input type="number" id="productPrice" min="1" required />
+
+        <label for="productCategory">Category</label>
+        <select id="productCategory" required>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="night">Night</option>
+        </select>
+
+        <label for="productDetails">Details</label>
+        <textarea id="productDetails" required></textarea>
+
+        <button type="submit" class="btn-primary">Save Product</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/admin-dashboard.js"></script>
+</body>
+</html>
