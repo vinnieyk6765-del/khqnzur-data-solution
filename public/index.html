@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KHQNZUR DATA SOLUTION - Bingwa Sokoni Data Deals</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <!-- Navigation -->
+    <nav class="navbar">
+      <div class="nav-left">
+        <h1 class="logo">KHQNZUR</h1>
+        <p class="tagline">Data Hata Ukwaa na Okoa!</p>
+      </div>
+      <div class="nav-right">
+        <span class="till-number">TILL: 54 17 120</span>
+        <button class="btn-admin" id="adminLoginBtn">Admin Login</button>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content">
+        <h2>BINGWA DATA DEALS</h2>
+        <p class="hero-subtitle">Buy multiple times a day</p>
+        <ul class="hero-features">
+          <li>✓ Fast & Reliable</li>
+          <li>✓ Easy STK Payment</li>
+          <li>✓ Instant Activation</li>
+        </ul>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-badge">BEST DEALS</div>
+        <p>From KSh 20</p>
+        <p class="hero-card-detail">Daily, Weekly, Monthly & Night</p>
+      </div>
+    </section>
+
+    <!-- Categories -->
+    <div class="categories">
+      <button class="category-btn active" data-filter="all">All Bundles</button>
+      <button class="category-btn" data-filter="daily">Daily</button>
+      <button class="category-btn" data-filter="weekly">Weekly</button>
+      <button class="category-btn" data-filter="monthly">Monthly</button>
+      <button class="category-btn" data-filter="night">Night</button>
+    </div>
+
+    <!-- Bundles Grid -->
+    <section class="bundles-section">
+      <h2>Available Bundles</h2>
+      <div id="bundlesGrid" class="bundles-grid"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Tell a friend to tell a friend 📱</p>
+      <p>© 2026 KHQNZUR DATA SOLUTION | Call: 0719 000 000</p>
+    </footer>
+  </div>
+
+  <!-- Admin Login Modal -->
+  <div id="adminLoginModal" class="modal hidden">
+    <div class="modal-box">
+      <button class="modal-close" id="closeAdminModal">×</button>
+      <div class="modal-header">
+        <h2>Admin Login</h2>
+        <p>Enter your credentials</p>
+      </div>
+      <form id="adminLoginForm">
+        <div class="form-group">
+          <label for="adminEmail">Email</label>
+          <input type="email" id="adminEmail" placeholder="kanzu@gmail.com" required />
+        </div>
+        <div class="form-group">
+          <label for="adminPassword">Password</label>
+          <input type="password" id="adminPassword" placeholder="••••••••" required />
+        </div>
+        <button type="submit" class="btn-submit">Login</button>
+        <p id="loginError" class="error-message hidden"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Purchase Modal -->
+  <div id="purchaseModal" class="modal hidden">
+    <div class="modal-box">
+      <button class="modal-close" id="closePurchaseModal">×</button>
+      <div class="modal-header">
+        <h2>Complete Your Purchase</h2>
+      </div>
+      <div id="purchaseDetails" class="purchase-details">
+        <div class="detail-row">
+          <span class="label">Bundle:</span>
+          <span id="purchaseBundleName" class="value"></span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Price:</span>
+          <span id="purchaseBundlePrice" class="value"></span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Details:</span>
+          <span id="purchaseBundleDetails" class="value"></span>
+        </div>
+      </div>
+      <form id="purchaseForm">
+        <div class="form-group">
+          <label for="phoneNumber">Phone Number</label>
+          <input type="tel" id="phoneNumber" placeholder="0712345678" required />
+        </div>
+        <div class="info-box">
+          <p>📲 You will receive an STK payment prompt on your phone</p>
+          <p>Enter your MPESA PIN to complete the purchase</p>
+        </div>
+        <button type="submit" class="btn-submit">Send Payment Prompt</button>
+        <p id="purchaseError" class="error-message hidden"></p>
+        <p id="purchaseSuccess" class="success-message hidden"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard Modal -->
+  <div id="adminDashboardModal" class="modal hidden">
+    <div class="modal-box modal-large">
+      <button class="modal-close" id="closeAdminDashboard">×</button>
+      <div class="modal-header">
+        <h2>Admin Dashboard</h2>
+        <button id="logoutBtn" class="btn-logout">Logout</button>
+      </div>
+
+      <!-- Dashboard Tabs -->
+      <div class="dashboard-tabs">
+        <button class="tab-btn active" data-tab="pricing">Pricing</button>
+        <button class="tab-btn" data-tab="transactions">Transactions</button>
+        <button class="tab-btn" data-tab="analytics">Analytics</button>
+      </div>
+
+      <!-- Pricing Tab -->
+      <div id="pricing-tab" class="tab-content active">
+        <h3>Update Bundle Prices</h3>
+        <div id="pricingGrid" class="pricing-grid"></div>
+      </div>
+
+      <!-- Transactions Tab -->
+      <div id="transactions-tab" class="tab-content">
+        <h3>Recent Transactions</h3>
+        <div class="transactions-table-wrapper">
+          <table id="transactionsTable" class="transactions-table">
+            <thead>
+              <tr>
+                <th>Phone</th>
+                <th>Bundle</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Analytics Tab -->
+      <div id="analytics-tab" class="tab-content">
+        <h3>Business Analytics</h3>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <p class="stat-label">Total Transactions</p>
+            <p id="statTotal" class="stat-value">0</p>
+          </div>
+          <div class="stat-box">
+            <p class="stat-label">Completed</p>
+            <p id="statCompleted" class="stat-value">0</p>
+          </div>
+          <div class="stat-box">
+            <p class="stat-label">Pending</p>
+            <p id="statPending" class="stat-value">0</p>
+          </div>
+          <div class="stat-box">
+            <p class="stat-label">Total Revenue</p>
+            <p id="statRevenue" class="stat-value">KSh 0</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
