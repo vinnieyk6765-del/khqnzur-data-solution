@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 const app = express();
@@ -13,23 +14,7 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret_key_in_production';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'kanzu@gmail.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'kanzu1234';
-
-// In-memory products
-let products = [
-  { id: 'daily-1', name: '10MB', category: 'daily', price: 20, details: 'Valid for 1 day' },
-  { id: 'daily-2', name: '50MB', category: 'daily', price: 50, details: 'Good for browsing and social media' },
-  { id: 'daily-3', name: '100MB', category: 'daily', price: 100, details: 'Affordable daily internet' },
-  { id: 'weekly-1', name: '1GB Weekly', category: 'weekly', price: 100, details: '7 days validity' },
-  { id: 'weekly-2', name: '2GB Weekly', category: 'weekly', price: 200, details: 'Perfect for work and streaming' },
-  { id: 'monthly-1', name: '5GB Monthly', category: 'monthly', price: 500, details: '30 days validity' },
-  { id: 'monthly-2', name: '10GB Monthly', category: 'monthly', price: 1000, details: 'Heavy usage package' },
-  { id: 'night-1', name: 'Night Bundle', category: 'night', price: 50, details: 'Night browsing package' },
-  { id: 'night-2', name: 'Unlimited Night', category: 'night', price: 100, details: 'Unlimited night data' }
-];
-
-const transactions = [];
-let accessToken = null;
-let tokenExpiry = 0;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/khqnzur';
 
 // Security & middleware
 app.use(helmet());
@@ -56,6 +41,72 @@ const paymentLimiter = rateLimit({
 app.use('/api/auth', authLimiter);
 app.use('/api/payment', paymentLimiter);
 app.use(express.static('public'));
+
+// MongoDB Connection
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => {
+  console.log('✓ Connected to MongoDB');
+}).catch(err => {
+  console.error('❌ MongoDB connection failed:', err.message);
+});
+
+// Schemas
+const ProductSchema = new mongoose.Schema({
+  bundleId: { type: String, unique: true, required: true, index: true },
+  name: { type: String, required: true },
+  category: { type: String, enum: ['daily', 'weekly', 'monthly', 'night'], required: true },
+  price: { type: Number, required: true, min: 1 },
+  details: { type: String, required: true },
+  isActive: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const TransactionSchema = new mongoose.Schema({
+  transactionId: { type: String, unique: true, required: true, index: true },
+  phoneNumber: { type: String, required: true, index: true },
+  bundleId: { type: String, required: true },
+  bundleName: { type: String, required: true },
+  amount: { type: Number, required: true },
+  status: { type: String, enum: ['pending', 'completed', 'failed'], default: 'pending', index: true },
+  checkoutRequestId: { type: String, index: true },
+  mpesaReceiptNumber: { type: String, sparse: true },
+  responseCode: String,
+  failureReason: String,
+  initiatedAt: { type: Date, default: Date.now },
+  completedAt: Date,
+  callbackData: mongoose.Schema.Types.Mixed
+});
+
+const Product = mongoose.model('Product', ProductSchema);
+const Transaction = mongoose.model('Transaction', TransactionSchema);
+
+// Initialize default products if empty
+async function initializeProducts() {
+  const count = await Product.countDocuments();
+  if (count === 0) {
+    const defaultProducts = [
+      { bundleId: 'daily-1', name: '10MB', category: 'daily', price: 20, details: 'Valid for 1 day' },
+      { bundleId: 'daily-2', name: '50MB', category: 'daily', price: 50, details: 'Good for browsing and social media' },
+      { bundleId: 'daily-3', name: '100MB', category: 'daily', price: 100, details: 'Affordable daily internet' },
+      { bundleId: 'weekly-1', name: '1GB Weekly', category: 'weekly', price: 100, details: '7 days validity' },
+      { bundleId: 'weekly-2', name: '2GB Weekly', category: 'weekly', price: 200, details: 'Perfect for work and streaming' },
+      { bundleId: 'monthly-1', name: '5GB Monthly', category: 'monthly', price: 500, details: '30 days validity' },
+      { bundleId: 'monthly-2', name: '10GB Monthly', category: 'monthly', price: 1000, details: 'Heavy usage package' },
+      { bundleId: 'night-1', name: 'Night Bundle', category: 'night', price: 50, details: 'Night browsing package' },
+      { bundleId: 'night-2', name: 'Unlimited Night', category: 'night', price: 100, details: 'Unlimited night data' }
+    ];
+    await Product.insertMany(defaultProducts);
+    console.log('✓ Default products initialized');
+  }
+}
+
+initializeProducts();
+
+let accessToken = null;
+let tokenExpiry = 0;
 
 function normalizePhone(phone) {
   if (!phone) return null;
@@ -120,15 +171,21 @@ async function getAccessToken() {
       ? 'https://api.safaricom.co.ke'
       : 'https://sandbox.safaricom.co.ke';
 
-  const response = await axios.get(
-    `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`,
-    { headers: { Authorization: `Basic ${auth}` } }
-  );
+  try {
+    const response = await axios.get(
+      `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`,
+      { headers: { Authorization: `Basic ${auth}` } }
+    );
 
-  accessToken = response.data.access_token;
-  tokenExpiry = Date.now() + (response.data.expires_in * 1000) - 10000;
+    accessToken = response.data.access_token;
+    tokenExpiry = Date.now() + (response.data.expires_in * 1000) - 10000;
+    console.log('✓ Safaricom access token obtained');
 
-  return accessToken;
+    return accessToken;
+  } catch (error) {
+    console.error('❌ Failed to get access token:', error.message);
+    throw error;
+  }
 }
 
 async function initiateStkPush(phoneNumber, amount, bundleId) {
@@ -159,26 +216,37 @@ async function initiateStkPush(phoneNumber, amount, bundleId) {
     TransactionDesc: `KHQNZUR Data Bundle - ${bundleId}`
   };
 
-  const response = await axios.post(
-    `${baseUrl}/mpesa/stkpush/v1/processrequest`,
-    payload,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
+  try {
+    const response = await axios.post(
+      `${baseUrl}/mpesa/stkpush/v1/processrequest`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       }
-    }
-  );
+    );
 
-  return response.data;
+    console.log('✓ STK Push sent successfully:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ STK Push error:', error.response?.data || error.message);
+    throw error;
+  }
 }
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, message: 'KHQNZUR API is running' });
 });
 
-app.get('/api/products', (req, res) => {
-  res.json(products);
+app.get('/api/products', async (req, res) => {
+  try {
+    const products = await Product.find({ isActive: true });
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load products' });
+  }
 });
 
 app.post('/api/payment/initiate', async (req, res) => {
@@ -194,44 +262,51 @@ app.post('/api/payment/initiate', async (req, res) => {
       return res.status(400).json({ error: 'Invalid phone number format' });
     }
 
-    const product = products.find(item => item.id === bundleId);
+    const product = await Product.findOne({ bundleId });
     if (!product) {
       return res.status(404).json({ error: 'Bundle not found' });
     }
 
-    const stkResponse = await initiateStkPush(normalizedPhone, product.price, product.id);
+    const stkResponse = await initiateStkPush(normalizedPhone, product.price, product.bundleId);
 
-    const transaction = {
-      id: `TXN-${Date.now()}`,
+    const transaction = new Transaction({
+      transactionId: `TXN-${Date.now()}`,
       phoneNumber: normalizedPhone,
-      bundleId: product.id,
+      bundleId: product.bundleId,
       bundleName: product.name,
       amount: product.price,
       status: 'pending',
       checkoutRequestId: stkResponse.CheckoutRequestID || null,
       responseCode: stkResponse.ResponseCode || null,
-      createdAt: new Date().toISOString()
-    };
+      initiatedAt: new Date()
+    });
 
-    transactions.push(transaction);
+    await transaction.save();
 
     return res.json({
       success: true,
       message: 'STK push sent successfully',
-      transaction
+      transaction: {
+        id: transaction.transactionId,
+        phoneNumber: transaction.phoneNumber,
+        bundleName: transaction.bundleName,
+        amount: transaction.amount,
+        status: transaction.status
+      }
     });
   } catch (error) {
-    console.error('PAYMENT ERROR:', error.response?.data || error.message);
+    console.error('PAYMENT ERROR:', error.message);
     return res.status(500).json({
       error: 'Payment initiation failed',
-      details: error.response?.data || error.message
+      details: error.message
     });
   }
 });
 
-app.post('/api/payment/callback', (req, res) => {
+app.post('/api/payment/callback', async (req, res) => {
   try {
     const callbackBody = req.body;
+    console.log('📲 Callback received:', JSON.stringify(callbackBody, null, 2));
 
     if (!callbackBody || !callbackBody.Body || !callbackBody.Body.stkCallback) {
       return res.status(400).json({ ResultCode: 1, ResultDesc: 'Invalid callback payload' });
@@ -240,21 +315,24 @@ app.post('/api/payment/callback', (req, res) => {
     const callback = callbackBody.Body.stkCallback;
     const resultCode = callback.ResultCode;
 
-    const transaction = transactions.find(
-      item => item.checkoutRequestId === callback.CheckoutRequestID
-    );
+    const transaction = await Transaction.findOne({
+      checkoutRequestId: callback.CheckoutRequestID
+    });
 
     if (transaction) {
       if (resultCode === 0) {
         transaction.status = 'completed';
         transaction.mpesaReceiptNumber =
           callback.CallbackMetadata?.Item?.find(item => item.Name === 'MpesaReceiptNumber')?.Value || null;
-        transaction.completedAt = new Date().toISOString();
+        transaction.completedAt = new Date();
+        console.log('✓ Payment completed:', transaction.transactionId);
       } else {
         transaction.status = 'failed';
         transaction.failureReason = callback.ResultDesc || 'Payment failed';
-        transaction.failedAt = new Date().toISOString();
+        console.log('❌ Payment failed:', transaction.transactionId);
       }
+      transaction.callbackData = callback;
+      await transaction.save();
     }
 
     return res.json({ ResultCode: 0, ResultDesc: 'Callback processed successfully' });
@@ -264,29 +342,68 @@ app.post('/api/payment/callback', (req, res) => {
   }
 });
 
-app.get('/api/admin/transactions', verifyToken, (req, res) => {
-  res.json(transactions);
+app.get('/api/admin/transactions', verifyToken, async (req, res) => {
+  try {
+    const transactions = await Transaction.find().sort({ initiatedAt: -1 }).limit(100);
+    res.json(transactions);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load transactions' });
+  }
 });
 
-app.put('/api/admin/product/:id', verifyToken, (req, res) => {
-  const { price } = req.body;
-  const product = products.find(item => item.id === req.params.id);
-
-  if (!product) {
-    return res.status(404).json({ error: 'Product not found' });
+app.get('/api/admin/products', verifyToken, async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load products' });
   }
-
-  if (!price || Number(price) <= 0) {
-    return res.status(400).json({ error: 'Invalid price' });
-  }
-
-  product.price = Number(price);
-
-  return res.json({ success: true, product });
 });
 
-app.get('/api/admin/products', verifyToken, (req, res) => {
-  res.json(products);
+app.put('/api/admin/product/:id', verifyToken, async (req, res) => {
+  try {
+    const { price } = req.body;
+    const product = await Product.findOne({ bundleId: req.params.id });
+
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    if (!price || Number(price) <= 0) {
+      return res.status(400).json({ error: 'Invalid price' });
+    }
+
+    product.price = Number(price);
+    product.updatedAt = new Date();
+    await product.save();
+
+    return res.json({ success: true, product });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update product' });
+  }
+});
+
+app.get('/api/admin/analytics', verifyToken, async (req, res) => {
+  try {
+    const total = await Transaction.countDocuments();
+    const completed = await Transaction.countDocuments({ status: 'completed' });
+    const pending = await Transaction.countDocuments({ status: 'pending' });
+    const failed = await Transaction.countDocuments({ status: 'failed' });
+    const revenue = await Transaction.aggregate([
+      { $match: { status: 'completed' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+
+    res.json({
+      total,
+      completed,
+      pending,
+      failed,
+      revenue: revenue.length > 0 ? revenue[0].total : 0
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load analytics' });
+  }
 });
 
 app.get('*', (req, res) => {
@@ -294,12 +411,13 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n╔════════════════════════════════════════════════════╗`);
-  console.log(`║  KHQNZUR DATA SOLUTION - Secure Backend Running   ║`);
-  console.log(`║  Server: http://localhost:${PORT}                        ║`);
-  console.log(`║  Admin: kanzu@gmail.com / kanzu1234                ║`);
-  console.log(`║  Status: ✓ Ready for production                   ║`);
-  console.log(`╚════════════════════════════════════════════════════╝\n`);
+  console.log(`\n╔════════════════════════════════════════════════════════════════╗`);
+  console.log(`║   KHQNZUR DATA SOLUTION - Secure Backend Running              ║`);
+  console.log(`║   Server: http://localhost:${PORT}                                 ║`);
+  console.log(`║   Database: MongoDB Connected                                 ║`);
+  console.log(`║   Admin: kanzu@gmail.com / kanzu1234                          ║`);
+  console.log(`║   Status: ✓ Ready for production                              ║`);
+  console.log(`╚════════════════════════════════════════════════════════════════╝\n`);
 });
 
 module.exports = app;
