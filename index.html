@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KHQNZUR DATA SOLUTION - Bingwa Sokoni Data Deals</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-section">
+                <h1 class="logo">KHQNZUR DATA SOLUTION</h1>
+                <p class="tagline">Automated Services - Data Hata Ukwaa na Okoa!</p>
+            </div>
+            <div class="call-section">
+                <p class="call-text">TILL NO TO BUY</p>
+                <p class="till-number">*5417120#</p>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="navbar">
+            <button class="nav-btn active" onclick="filterBundles('all')">All Bundles</button>
+            <button class="nav-btn" onclick="filterBundles('daily')">Daily</button>
+            <button class="nav-btn" onclick="filterBundles('weekly')">Weekly</button>
+            <button class="nav-btn" onclick="filterBundles('monthly')">Monthly</button>
+            <button class="nav-btn" onclick="filterBundles('night')">Night</button>
+            <button class="nav-btn admin-btn" onclick="goToAdmin()">Admin Login</button>
+        </nav>
+
+        <!-- Bundles Section -->
+        <section class="bundles-section">
+            <h2>Bingwa Data Deals</h2>
+            <p class="subtitle">Buy multiple times a day!</p>
+            
+            <div id="bundlesList" class="bundles-grid">
+                <!-- Bundles will be loaded here by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Tell a friend to tell a friend 📱</p>
+            <p>Customer Support: Call 0714123456</p>
+            <p>&copy; 2026 KHQNZUR DATA SOLUTION. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Purchase Modal -->
+    <div id="purchaseModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closePurchaseModal()">&times;</span>
+            <h2>Complete Your Purchase</h2>
+            
+            <div class="bundle-details">
+                <p><strong>Bundle:</strong> <span id="modalBundleName"></span></p>
+                <p><strong>Price:</strong> KSh <span id="modalBundlePrice"></span></p>
+                <p><strong>Details:</strong> <span id="modalBundleDetails"></span></p>
+            </div>
+
+            <form id="purchaseForm" onsubmit="processPurchase(event)">
+                <div class="form-group">
+                    <label for="phoneNumber">Enter Your Phone Number:</label>
+                    <input 
+                        type="tel" 
+                        id="phoneNumber" 
+                        placeholder="0712345678" 
+                        required
+                        pattern="^(254|\+254|0)[0-9]{9}$"
+                        title="Enter a valid Kenyan phone number"
+                    >
+                </div>
+
+                <div class="info-box">
+                    <p>💡 An MPESA payment prompt will appear on your phone</p>
+                    <p>📲 Enter your MPESA PIN to complete the purchase</p>
+                </div>
+
+                <button type="submit" class="btn-buy-modal">Send Payment Prompt</button>
+            </form>
+
+            <div id="paymentStatus" class="payment-status" style="display:none;">
+                <p id="statusMessage"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content success">
+            <span class="close" onclick="closeSuccessModal()">&times;</span>
+            <div class="success-icon">✓</div>
+            <h2>Payment Successful!</h2>
+            <p id="successMessage"></p>
+            <p class="confirmation-text">Your data bundle has been activated.</p>
+            <button onclick="closeSuccessModal()" class="btn-close">Close</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
